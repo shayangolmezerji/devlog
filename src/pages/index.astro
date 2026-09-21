@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/base.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (
+  await getCollection('blog', ({ data }) => !data.draft)
+).sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+---
+<Base title="devlog" description="Notes on architecture decisions, written while the code lands.">
+  <p>Notes on architecture decisions, written while the code lands.</p>
+  {posts.length === 0 && <p>No posts published yet.</p>}
+  <ul class="post-list">
+    {posts.map((post) => (
+      <li>
+        <a href={`blog/${post.id}/`}>{post.data.title}</a>
+        <p class="meta">
+          <time datetime={post.data.date.toISOString()}>
+            {post.data.date.toISOString().slice(0, 10)}
+          </time>
+        </p>
+        <p>{post.data.description}</p>
+      </li>
+    ))}
+  </ul>
+</Base>
