@@ -169,8 +169,10 @@ retry:  version=1 applied=False event_id=dd051941-df82-46f5-a368-f9b0740107e4
 log length after the retry: 1
 ```
 
-Same `event_id`, `applied=False`, one event in the log. The `applied` flag is
-how a caller tells a fresh write from a retransmit without comparing versions.
+Same `event_id` on both lines, `applied=False`, one event in the log. That id is
+a fresh `uuid4`, so a rerun prints other digits in the same pattern. The
+`applied` flag is how a caller tells a fresh write from a retransmit without
+comparing versions.
 
 ## What a correction is
 
@@ -180,7 +182,8 @@ stay in the log, and the fold simply ends at the later one. There is no undo
 path, because undoing is just writing what should now be true.
 
 The fold is `project` in `src/menu_events/projections/menu.py`, and it is pure
-Python that reads no clock:
+Python that reads no clock. The stream below is a longer one, four events on a
+menu holding a bread and a side, which is what it takes to show a correction.
 
 ```
 events (oldest first)                 fold, apply_event per event
@@ -214,7 +217,7 @@ that moment. `menu_projection` is the only cached copy the design keeps, and it
 stores the version it folded to, so a consumer can tell a stale menu from a
 fresh one instead of guessing.
 
-## What is not proven
+## What has run, and what has not
 
 The whole portable core, the version rule and the idempotency rule and the fold,
 run against `InMemoryEventStore`, and the same rules run again over HTTP through
@@ -222,20 +225,34 @@ run against `InMemoryEventStore`, and the same rules run again over HTTP through
 
 ```
 $ cd menu-events && .venv/bin/python -m pytest -q
-100 passed, 13 skipped in 1.11s
+100 passed, 15 skipped in 0.90s
 ```
 
-Those 13 skips are the entire PostgreSQL tier. There is no database in this
-development environment, so `tests/integration/` skips wherever
-`MENU_EVENTS_TEST_DSN` is unset, and a green run without a server proves nothing
-about `store/postgres.py`: not the append-only trigger, not the grants, not the
-advisory-lock version check, not the one-transaction atomicity of a write. The
-Postgres adapter has never met a server.
+Those 15 skips are the entire PostgreSQL tier. With `MENU_EVENTS_TEST_DSN` unset
+the tier reports green while touching no database at all, and a suite that passes
+by skipping everything is a negative signal, so the tier has been run against a
+server: 15 tests on PostgreSQL 16.15, both migrations applied through psycopg, in
+a throwaway container. The workflow now declares that server as a service, sets
+the variable, and fails the job if any case in the tier skips anyway. Every step
+of it has run by hand on this machine. None has run on a runner, because nothing
+has been pushed.
 
-That is written into the repo rather than hidden. ADR 0001 opens by separating
-what executed from what was only read out of SQL, and the README says the same
-in its own words: the unverified parts "are unverified until someone runs the
-tier against a real server." A cache tier, and the fold cost at a real stream
-length, are argued about in the ADR with no number attached, because a figure
-for either would be a guess dressed as an argument. The measurement of the fold
-is a separate post.
+What the server reached: the append-only trigger, which refused an `UPDATE` and a
+`DELETE` from a superuser, the one role grants could not have bound. The
+projector's transaction, which rolled back whole when a price too large for
+`menu_item.price_cents` arrived in the log. The projection advisory lock, which
+two writers now race on one stream, with the lock patched out as the negative
+control.
+
+What it has not reached: nothing in the tier connects as `menu_app`, so the
+`REVOKE UPDATE, DELETE, TRUNCATE` in the migration has never been the thing that
+turned a write away, and `store.append` has never faced two writers at once, so
+the concurrency argument on the store side still rests on the unit tier's
+in-memory version of the same rule.
+
+None of that is smoothed over in the repo. ADR 0001's status section separates
+what ran from what is only read out of the SQL, and the README keeps a section
+headed "What runs here, and what does not" that names the files the tier executed
+and says the workflow has never had a runner. A cache tier is argued about in the
+ADR with no number attached, because a figure for it would be a guess dressed as
+an argument. The measurement of the fold is a separate post.

@@ -245,7 +245,8 @@ measures the pure-Python fold and nothing else. It says something about the
 fold's complexity and its constant factor, and nothing about a production
 PostgreSQL rebuild, which adds per-event row writes and an advisory lock around
 the whole thing and runs on hardware I do not have here. Those Postgres code
-paths are the same tier that has never met a server — all 13 integration tests
-skip without `MENU_EVENTS_TEST_DSN` set — so a real rebuild-vs-catch-up number
-still has to be measured on a machine that can bring one up. What is claimed
-here is only the fold: measured, on the adapter that actually ran.
+paths have run since: 15 integration tests against PostgreSQL 16.15, including
+`advance` and `rebuild` writing into a real `menu_item` table under an advisory
+lock. What has not been measured is the same pair of numbers on that server, which
+is the figure that would move if the per-event row writes dominated the fold. What
+is claimed here is only the fold: measured, on the adapter that actually ran.
