@@ -114,7 +114,7 @@ Every rule in it exists because a test needed it to be assertable:
 
 ## What the suite reports
 
-```bash
+```
 $ bash tests/run.sh
 ...
 == shellcheck on every script
