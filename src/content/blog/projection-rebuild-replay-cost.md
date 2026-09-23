@@ -182,15 +182,15 @@ items=  500  cold=0.1429s (142.9 us/event)  incremental(100)=26356.9us
 items= 2000  cold=0.8134s (325.3 us/event)  incremental(100)=43210.6us
 ```
 
-The block above is one run of each row. Repeating the script three more times on
-the same box, which was not idle, moved the absolute figures by up to 1.7x on a
-cold fold and 2.2x on an incremental tail. A cold event on the 500-item menu came
-out at 143, 83, 113 and 129 microseconds across the four runs, and the 100-event
-tail at 26.4, 11.8, 19.8 and 16.6 milliseconds. The shape held every time. Cost
-per event rose with the item count in all four runs, and it stayed between 17 and
-29 microseconds as the stream grew from 1,000 to 20,000 events at a fixed menu
-size. What the table carries is the ordering and the slope. The digits are one
-run on one machine.
+The block above is one run of each row on one machine. Repeating the script three
+more times on the same box, which was not idle, moved the absolute figures by up
+to 1.7x on a cold fold and 2.2x on an incremental tail. A cold event on the
+500-item menu came out at 143, 83, 113 and 129 microseconds across the four runs,
+and the 100-event tail at 26.4, 11.8, 19.8 and 16.6 milliseconds. The shape held
+every time. Cost per event rose with the item count in all four runs, and it
+stayed between 17 and 29 microseconds as the stream grew from 1,000 to 20,000
+events at a fixed menu size. What the table carries is the ordering and the
+slope.
 
 ## What the numbers say
 
@@ -247,6 +247,6 @@ PostgreSQL rebuild, which adds per-event row writes and an advisory lock around
 the whole thing and runs on hardware I do not have here. Those Postgres code
 paths have run since: 15 integration tests against PostgreSQL 16.15, including
 `advance` and `rebuild` writing into a real `menu_item` table under an advisory
-lock. What has not been measured is the same pair of numbers on that server, which
-is the figure that would move if the per-event row writes dominated the fold. What
-is claimed here is only the fold: measured, on the adapter that actually ran.
+lock. The same pair of numbers has not been measured on that server, and that is
+the figure that would move if the per-event row writes dominated the fold. What
+is claimed here is only the fold, measured on the adapter that actually ran.

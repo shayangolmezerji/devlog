@@ -219,8 +219,8 @@ fresh one instead of guessing.
 
 ## What has run, and what has not
 
-The whole portable core, the version rule and the idempotency rule and the fold,
-run against `InMemoryEventStore`, and the same rules run again over HTTP through
+The whole portable core, the version rule, the idempotency rule and the fold,
+runs against `InMemoryEventStore`, and the same rules run again over HTTP through
 `menu_events.api`:
 
 ```
@@ -239,10 +239,9 @@ has been pushed.
 
 What the server reached: the append-only trigger, which refused an `UPDATE` and a
 `DELETE` from a superuser, the one role grants could not have bound. The
-projector's transaction, which rolled back whole when a price too large for
-`menu_item.price_cents` arrived in the log. The projection advisory lock, which
-two writers now race on one stream, with the lock patched out as the negative
-control.
+projector's transaction rolled back whole when a price too large for
+`menu_item.price_cents` arrived in the log. Two writers now race the projection
+advisory lock on one stream, with the lock patched out as the negative control.
 
 What it has not reached: nothing in the tier connects as `menu_app`, so the
 `REVOKE UPDATE, DELETE, TRUNCATE` in the migration has never been the thing that
@@ -254,5 +253,5 @@ None of that is smoothed over in the repo. ADR 0001's status section separates
 what ran from what is only read out of the SQL, and the README keeps a section
 headed "What runs here, and what does not" that names the files the tier executed
 and says the workflow has never had a runner. A cache tier is argued about in the
-ADR with no number attached, because a figure for it would be a guess dressed as
-an argument. The measurement of the fold is a separate post.
+ADR with no number attached, because nothing has been measured that could support
+one. The measurement of the fold is a separate post.
