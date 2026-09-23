@@ -1,7 +1,8 @@
 version: 2
 updates:
-  # The Pages workflow is pinned to commit SHAs and this job holds
-  # `id-token: write`, so moving those hashes deliberately is the point.
+  # The workflow pins its actions to commit SHAs, so nothing moves them on its
+  # own and a hash left alone eventually points somewhere unmaintained. These
+  # PRs are how a pin gets reviewed instead of traded for a moving tag.
   - package-ecosystem: github-actions
     directory: /
     schedule:
