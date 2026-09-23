@@ -3,10 +3,11 @@
 Static developer blog. Astro content collections, no JavaScript
 shipped to the reader.
 
-Three posts are planned, each about one architecture decision made in
-the sibling repos (`menu-events/`, `linux-recovery/`). They are
-outline drafts until the code they describe is merged. The rules for
-what may be published are in `docs/editorial.md`.
+Three posts are published: two about decisions in `menu-events/`
+(event sourcing a price change under concurrent writes, and what a
+projection rebuild actually costs) and one about `linux-recovery/`
+(making a firewall-rewriting watchdog testable without root). The
+rules for what may be published are in `docs/editorial.md`.
 
 ## Requirements
 
@@ -28,7 +29,7 @@ src/content.config.ts    collection schema: title, description, date, tags, draf
 src/content/blog/        one markdown file per post
 src/pages/               index + blog/[...id]
 src/layouts/base.astro   system fonts, 70ch measure, prefers-color-scheme
-.github/workflows/       Pages deploy, copied from the Astro docs
+.github/workflows/       Pages deploy, upstream actions pinned to commits
 ```
 
 ## Front matter
