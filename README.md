@@ -9,6 +9,14 @@ projection rebuild actually costs) and one about `linux-recovery/`
 (making a firewall-rewriting watchdog testable without root). The
 rules for what may be published are in `docs/editorial.md`.
 
+## History
+
+The scaffold landed as one batch: eight commits sharing the same second on
+2026-09-22, covering the schema, the layouts, the workflow and the outline
+drafts. Everything after that is one change per commit, minutes apart. Nothing a
+post claims rests on the shape of this history, so it is stated here instead of
+left for `git log` to look odd.
+
 ## Requirements
 
 - Node.js. The Pages workflow builds on Node 24 by default.
