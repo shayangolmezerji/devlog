@@ -182,24 +182,33 @@ items=  500  cold=0.1429s (142.9 us/event)  incremental(100)=26356.9us
 items= 2000  cold=0.8134s (325.3 us/event)  incremental(100)=43210.6us
 ```
 
-The per-event figures wobble a few microseconds between runs on a loaded
-laptop; the shape does not.
+The block above is one run of each row. Repeating the script three more times on
+the same box, which was not idle, moved the absolute figures by up to 1.7x on a
+cold fold and 2.2x on an incremental tail. A cold event on the 500-item menu came
+out at 143, 83, 113 and 129 microseconds across the four runs, and the 100-event
+tail at 26.4, 11.8, 19.8 and 16.6 milliseconds. The shape held every time. Cost
+per event rose with the item count in all four runs, and it stayed between 17 and
+29 microseconds as the stream grew from 1,000 to 20,000 events at a fixed menu
+size. What the table carries is the ordering and the slope. The digits are one
+run on one machine.
 
 ## What the numbers say
 
-Cold rebuild is linear in event count at a fixed menu size: about 17 to 20
-microseconds per event at 50 items, so a 20,000-event stream folds in 0.4
-seconds. That part matches the ADR.
+Cold rebuild is linear in event count at a fixed menu size: the per-event cost
+does not grow with the stream, landing between 17 and 29 microseconds per event
+from 1,000 to 20,000 events at 50 items across the four runs, so a 20,000-event
+stream folded in 0.37 to 0.57 seconds. That part matches the ADR.
 
 The incremental figures are the reason `advance` exists. A 100-event tail costs
-about 1.5 to 2.1 milliseconds regardless of whether the stream is 1,000 or
+about 1.5 to 3.2 milliseconds regardless of whether the stream is 1,000 or
 20,000 events long. `advance` does not get slower as history grows; `rebuild`
 does. Steady-state catch-up is cheap, and a full recompute is the expensive
 fallback.
 
 Then the inconvenient finding, in the second block. The per-event cost of the
-fold is not a constant; it grows with how many items are on the menu. A cold
-event costs 9 microseconds at 10 items, 39 at 100, 143 at 500, 325 at 2,000. A
+fold is not a constant; it grows with how many items are on the menu. In the run
+above a cold event costs 9 microseconds at 10 items, 39 at 100, 143 at 500, 325
+at 2,000. A
 single 100-event incremental catch-up costs 1.7ms on a 10-item menu and 43ms on
 a 2,000-item menu, even though exactly the same 100 events are applied. The fold
 is O(events x items), not the O(events) the ADR writes.
