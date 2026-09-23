@@ -1,6 +1,6 @@
 ---
 title: "A dead man's switch for SSH, and why dry-run made it testable"
-description: "How an env-var tripwire and a fake ss turned a firewall-rewriting watchdog into 201 checks that never need root."
+description: "How an env-var tripwire and a fake ss turned a firewall-rewriting watchdog into 229 checks that never need root."
 date: 2026-09-23
 tags: [systemd, linux-recovery]
 draft: false
@@ -87,7 +87,7 @@ directory, called `save <dir>` at arm time and `restore <dir>` later. The
 contract is short (`README.md`, "Writing a hook"):
 
 ```
-<NN-name> save    <snapshot-dir>   capture current state into <snapshot-dir>
+<NN-name> save <snapshot-dir>      capture the current state, write it into <snapshot-dir>
 <NN-name> restore <snapshot-dir>   put it back
 exit 0    done
 exit 77   nothing applicable on this host, recorded as a skip
@@ -121,10 +121,10 @@ $ bash tests/run.sh
   SKIP shellcheck is not installed on this machine
        install it, or run the CI workflow, to get this check
 ...
-201 checks passed, 0 failed
+229 checks passed, 0 failed
 ```
 
-24 groups, 201 checks, one skip. The skip is `shellcheck`: not installed here and
+26 groups, 229 checks, one skip. The skip is `shellcheck`: not installed here and
 not installable without root, so the lint gate the CI workflow defines has never
 run on this machine. `bash -n` passes on every file, and `bash -n` is a syntax
 check only. That is a real gap, and it is stated in the README's Limitations

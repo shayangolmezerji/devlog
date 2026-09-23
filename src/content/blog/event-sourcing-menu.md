@@ -222,10 +222,10 @@ run against `InMemoryEventStore`, and the same rules run again over HTTP through
 
 ```
 $ cd menu-events && .venv/bin/python -m pytest -q
-94 passed, 10 skipped in 1.53s
+100 passed, 13 skipped in 1.11s
 ```
 
-Those 10 skips are the entire PostgreSQL tier. There is no database in this
+Those 13 skips are the entire PostgreSQL tier. There is no database in this
 development environment, so `tests/integration/` skips wherever
 `MENU_EVENTS_TEST_DSN` is unset, and a green run without a server proves nothing
 about `store/postgres.py`: not the append-only trigger, not the grants, not the
