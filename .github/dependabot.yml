@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # The Pages workflow is pinned to commit SHAs and this job holds
+  # `id-token: write`, so moving those hashes deliberately is the point.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
