@@ -189,6 +189,61 @@ suite found a real defect in code the suite was not written to flatter. A test
 that has only ever passed tells you far less than one that caught something and
 reported it red first.
 
+## The flake was a signal disposition, not a slow machine
+
+One group, `a signal while capturing aborts the arm and restores what was
+saved`, had a habit: green alone, red when the suite ran several ways at once,
+and always red as a block of eight failures rather than one. The first answer
+was that `sleep 0.5` before the `kill -INT` was too tight for a busy box, so the
+signal arrived after the arm had moved past the point where an abort means
+anything. A patch replaced the delay with a poll for the trace line the slow
+fixture hook writes when it enters. That patch is reasonable code and it changed
+nothing: three concurrent runs of the patched tree printed
+`238 checks passed, 8 FAILED`, exactly the numbers three concurrent runs of the
+unpatched tree printed. The failure was not the size of the window.
+
+What varied was not the load, it was how the suite had been started. Run in the
+foreground, the group is green. Run it with `&`, redirecting its output, and it
+is red every time, with nothing else in the run disturbed. Two lines show why:
+
+```
+$ printf '%s\n' 'trap "echo caught; exit 1" INT TERM' 'sleep 3' > /tmp/sig-probe.sh
+$ bash /tmp/sig-probe.sh > /tmp/sig-bg.out 2>&1 & pid=$!
+$ sleep 0.4; kill -INT "$pid"; wait "$pid"; echo "rc=$?"; cat /tmp/sig-bg.out
+rc=0
+$ bash /tmp/sig-probe.sh > /tmp/sig-bg2.out 2>&1 & pid=$!
+$ sleep 0.4; kill -TERM "$pid"; wait "$pid"; echo "rc=$?"; cat /tmp/sig-bg2.out
+rc=1
+caught
+```
+
+A shell with no job control starts a background job with `SIGINT` ignored. Bash
+will not install a handler for a signal its process entered that way, and it does
+not warn you when you ask for one. So the arm's `trap ... INT TERM` installed the
+`TERM` half and silently dropped the `INT` half, `kill -INT` went to a process
+that was discarding it, and the capture ran to the end and applied the change.
+The eight assertions describe an abort that never happened. Foreground, the trap
+is real, which is exactly why the group looked fine in isolation.
+
+`bin/deadman-ssh:503` traps both names into one handler, so nothing about the
+switch's behaviour is untested by choosing between them. The harness now reads
+`SigCgt` out of `/proc/<pid>/status` for the arm it started and signals whichever
+of the two that mask says the process is catching, and it prints the choice: a
+foreground run says `arm catches SIGINT`, three runs launched with `&` say
+`arm catches SIGTERM`, and all four end `246 checks passed, 0 failed`. The
+handshake stayed, because it is still the right shape. Bash defers a trap until
+the child it was waiting on returns, so the arm's abort point is wherever the
+fixture hook ends rather than wherever the kill was sent: the harness waits for
+the hook's entry line, dispatches the signal, creates a file, and only then does
+the hook leave its `save`. That converts a two second margin into a guarantee,
+which is worth the one extra variable. It was never the fix on its own, and the
+`238` above is the proof.
+
+The finding has an operator half, which is why it is in the README's
+Limitations and not only in the test. An arm you start with `&` from a script
+cannot be interrupted with Ctrl-C at all. It finishes the capture and applies the
+change. `kill -TERM` reaches it.
+
 ## Two things it cannot see
 
 The README's Limitations section names what is unproven. Two findings are worth a
