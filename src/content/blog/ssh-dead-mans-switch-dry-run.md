@@ -1,6 +1,6 @@
 ---
 title: "A dead man's switch for SSH, and why dry-run made it testable"
-description: "How an env-var tripwire and a fake ss turned a firewall-rewriting watchdog into 229 checks that never need root."
+description: "How an env-var tripwire and a fake ss turned a firewall-rewriting watchdog into 246 checks that never need root."
 date: 2026-09-23
 tags: [systemd, linux-recovery]
 draft: false
@@ -121,14 +121,21 @@ $ bash tests/run.sh
   SKIP shellcheck is not installed on this machine
        install it, or run the CI workflow, to get this check
 ...
-229 checks passed, 0 failed
+246 checks passed, 0 failed
 ```
 
-26 groups, 229 checks, one skip. The skip is `shellcheck`: not installed here and
-not installable without root, so the lint gate the CI workflow defines has never
-run on this machine. `bash -n` passes on every file, and `bash -n` is a syntax
-check only. That is a real gap, and it is stated in the README's Limitations
-rather than smoothed over. The harness is plain bash plus coreutils on purpose:
+27 groups, 246 checks, no failures, and one group that checks nothing here. The skip is
+accurate: `shellcheck` is not installed on this box and nothing here installs
+packages. It is closable without root, though, and closing it tells you something.
+The binary taken out of the `koalaman/shellcheck:stable` image and put on `PATH`
+turns that same run into 256 checks, ten of them lint, and 256 is what the CI
+workflow's suite job reports on every push, because that runner has the package.
+The lint found one defect, and it found it in the harness: `SC2155` on a
+`local file=$(...)`, where `local` returns its own status, so a failed
+substitution left `$file` empty and the test went on to rewrite a path that does
+not exist. Two runs went red on it before `8a5f27d` split the declaration from the
+assignment, and the README names both. `bash -n` passes on every file, and `bash
+-n` is a syntax check only. The harness is plain bash plus coreutils on purpose:
 the box you administer has neither bats nor pytest, and a switch you can only
 test on a developer machine is not testable where it runs.
 

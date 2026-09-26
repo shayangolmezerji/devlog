@@ -240,8 +240,12 @@ portable core were green on each, the HTTP tier errored its fixtures with
 `RuntimeError: The starlette.testclient module requires the httpx2 package to be
 installed`, and the Postgres steps below it came back `skipped` because the job
 stopped before them. The commit after it, `8b21e32`, declares the missing
-`httpx` in the `api` extra, and it is still unpushed, so no runner has seen the
-fix.
+`httpx` in the `api` extra, and run `36257941725` took that commit to a runner on
+2026-09-26: green on both Python versions, `63 passed` in the portable core, `37
+passed` in the HTTP tier, `18 passed` against the `postgres:16.15-alpine` service
+the workflow declares. It is the first run of this workflow to finish without a
+red step, and the first time the PostgreSQL tier met a server nobody started by
+hand.
 
 What the server reached: the append-only trigger, which refused an `UPDATE` and a
 `DELETE` from a superuser, the one role grants could not have bound. The
