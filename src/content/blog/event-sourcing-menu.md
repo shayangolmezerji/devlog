@@ -225,33 +225,48 @@ runs against `InMemoryEventStore`, and the same rules run again over HTTP throug
 
 ```
 $ cd menu-events && .venv/bin/python -m pytest -q
-100 passed, 15 skipped in 0.90s
+100 passed, 18 skipped in 1.11s
 ```
 
-Those 15 skips are the entire PostgreSQL tier. With `MENU_EVENTS_TEST_DSN` unset
+Those 18 skips are the entire PostgreSQL tier. With `MENU_EVENTS_TEST_DSN` unset
 the tier reports green while touching no database at all, and a suite that passes
 by skipping everything is a negative signal, so the tier has been run against a
-server: 15 tests on PostgreSQL 16.15, both migrations applied through psycopg, in
+server: 18 tests on PostgreSQL 16.15, both migrations applied through psycopg, in
 a throwaway container. The workflow now declares that server as a service, sets
-the variable, and fails the job if any case in the tier skips anyway. Every step
-of it has run by hand on this machine. None has run on a runner, because nothing
-has been pushed.
+the variable, and fails the job if any case in the tier skips anyway. That
+workflow has reached a runner too: run 36256139350, on commit `7162b8d`, and both
+Python versions failed it at the same step. The lint, the api-extra check and the
+portable core were green on each, the HTTP tier errored its fixtures with
+`RuntimeError: The starlette.testclient module requires the httpx2 package to be
+installed`, and the Postgres steps below it came back `skipped` because the job
+stopped before them. The commit after it, `8b21e32`, declares the missing
+`httpx` in the `api` extra, and it is still unpushed, so no runner has seen the
+fix.
 
 What the server reached: the append-only trigger, which refused an `UPDATE` and a
 `DELETE` from a superuser, the one role grants could not have bound. The
 projector's transaction rolled back whole when a price too large for
-`menu_item.price_cents` arrived in the log. Two writers now race the projection
-advisory lock on one stream, with the lock patched out as the negative control.
+`menu_item.price_cents` arrived in the log. Two writers race the projection
+advisory lock on one stream, with the lock patched out as the negative control,
+and three tests race the log from one barrier: two `store.append` calls at the
+version both of them read, one command against a retry of itself, and the first
+race driven through `MenuCommandHandler`. Each asserts only what holds whichever
+writer wins, so a pass is not a coin flip: one event lands per round, and the
+loser's `command_id` is nowhere in the `events` table. Taking the version check
+and the advisory lock out one at a time says which of those results each guard
+holds up. Without the version check both writers land, at consecutive versions
+the primary key finds nothing wrong with. With only the advisory lock gone it is
+the retried command, not the racing pair, that gets refused as stale, because
+its duplicate lookup ran before the first copy committed.
 
 What it has not reached: nothing in the tier connects as `menu_app`, so the
 `REVOKE UPDATE, DELETE, TRUNCATE` in the migration has never been the thing that
-turned a write away, and `store.append` has never faced two writers at once, so
-the concurrency argument on the store side still rests on the unit tier's
-in-memory version of the same rule.
+turned a write away. And no test has put a projector's lock and a command's lock
+in each other's way, so the two are proven separately and never together.
 
 None of that is smoothed over in the repo. ADR 0001's status section separates
 what ran from what is only read out of the SQL, and the README keeps a section
 headed "What runs here, and what does not" that names the files the tier executed
-and says the workflow has never had a runner. A cache tier is argued about in the
-ADR with no number attached, because nothing has been measured that could support
-one. The measurement of the fold is a separate post.
+and records which step of the workflow a runner failed. A cache tier is argued
+about in the ADR with no number attached, because nothing has been measured that
+could support one. The measurement of the fold is a separate post.

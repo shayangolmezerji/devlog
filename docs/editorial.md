@@ -29,7 +29,8 @@ The point of this blog is depth on four repos, not volume.
 1. Write against merged code, front matter `draft: true`.
 2. `npm run dev`, read it rendered.
 3. Flip `draft`, build, reread the built HTML once.
-4. Commit. The workflow publishes on push to `main`.
+4. Commit. `push` to `main` runs the build; no post has reached a
+   Pages URL yet, see Deployment in the README.
 
 A post that has to describe code that does not exist yet is not late,
 it is wrong. Leave it a draft.

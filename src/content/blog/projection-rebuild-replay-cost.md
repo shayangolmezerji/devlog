@@ -55,8 +55,8 @@ Steady state wants `advance`: it reads from the `checkpoint` the last run
 published, so it folds only the new tail. `rebuild` is for when the checkpoint
 cannot be trusted — a first run, a projection written before a change to
 `apply_event`, a bug found in the derived rows. Both are PostgreSQL code paths
-that have never run here, so measuring them needs a server this environment does
-not have.
+that have run against a real server since, and neither has been timed on one, so
+every figure below is the fold measured on the adapter that ran here.
 
 What *can* be measured is the fold itself, and that matters for a second reason.
 The HTTP read does not use the checkpoint table at all. `read_menu` in
@@ -244,9 +244,10 @@ This is the in-memory adapter, single process, CPython 3.13.5, no database. It
 measures the pure-Python fold and nothing else. It says something about the
 fold's complexity and its constant factor, and nothing about a production
 PostgreSQL rebuild, which adds per-event row writes and an advisory lock around
-the whole thing and runs on hardware I do not have here. Those Postgres code
-paths have run since: 15 integration tests against PostgreSQL 16.15, including
-`advance` and `rebuild` writing into a real `menu_item` table under an advisory
-lock. The same pair of numbers has not been measured on that server, and that is
-the figure that would move if the per-event row writes dominated the fold. What
-is claimed here is only the fold, measured on the adapter that actually ran.
+the whole thing and runs on hardware no container here stands in for. Those
+Postgres code paths have run since: 18 integration tests against PostgreSQL
+16.15, including `advance` and `rebuild` writing into a real `menu_item` table
+under an advisory lock, and two writers racing each other through both. The same
+pair of numbers has not been measured on that server, and that is the figure
+that would move if the per-event row writes dominated the fold. What is claimed
+here is only the fold, measured on the adapter that actually ran.
